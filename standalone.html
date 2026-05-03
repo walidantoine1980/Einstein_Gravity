@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einstein Platform | Relativity Pedagogical System</title>
+    <!-- Core Dependencies (UMD) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/@react-three/fiber@8.15.12/dist/react-three-fiber.umd.js"></script>
+    <script src="https://unpkg.com/@react-three/drei@9.96.1/dist/react-three-drei.umd.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #020205; color: #cbd5e1; font-family: 'Outfit', sans-serif; margin: 0; overflow: hidden; }
+        .glass { background: rgba(10, 10, 15, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
+        .accent-text { background: linear-gradient(to right, #fff, #8b5cf6); -webkit-background-clip: text; color: transparent; }
+        .math-card { background: rgba(0,0,0,0.6); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 20px; padding: 1.5rem; }
+        input[type=range] { -webkit-appearance: none; background: rgba(255,255,255,0.1); border-radius: 10px; width: 100%; height: 6px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #8b5cf6; cursor: pointer; box-shadow: 0 0 10px rgba(139,92,246,0.5); }
+        .nav-btn { transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.05); }
+        .nav-active { background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.5); color: white; box-shadow: 0 0 20px rgba(139,92,246,0.2); }
+        .animate-pulse-slow { animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        // Global Aliases for UMD modules
+        const { useState, useEffect, useRef, useMemo, Fragment } = React;
+        const { createRoot } = ReactDOM;
+        const { Canvas, useFrame, useThree } = ReactThreeFiber;
+        const { OrbitControls, Stars, PerspectiveCamera, Float, Sparkles, Environment } = ReactThreeDrei;
+
+        const h = React.createElement;
+
+        // --- MATH RENDERER ---
+        function MathDisplay({ math, id }) {
+            useEffect(() => {
+                const el = document.getElementById(id);
+                if (el) katex.render(math, el, { throwOnError: false, displayMode: true });
+            }, [math, id]);
+            return h('div', { id, className: "text-violet-400 py-2" });
+        }
+
+        // --- SCENE COMPONENTS ---
+        function SimulatorScene({ activeModule, mass }) {
+            const gridRef = useRef();
+            useFrame((state) => {
+                if (gridRef.current) gridRef.current.rotation.y = state.clock.getElapsedTime() * 0.04;
+            });
+
+            return h(Fragment, null, [
+                h('ambientLight', { intensity: 0.6, key: 'l1' }),
+                h('pointLight', { position: [15, 15, 15], intensity: 2.5, key: 'l2' }),
+                h(Stars, { radius: 100, depth: 50, count: 7000, factor: 4, saturation: 0, fade: true, key: 'stars' }),
+                
+                activeModule === 'curvature' && h('group', { key: 'curv' }, [
+                    h('mesh', { key: 'body' }, [
+                        h('sphereGeometry', { args: [mass * 0.18, 64, 64] }),
+                        h('meshStandardMaterial', { color: "#8b5cf6", emissive: "#8b5cf6", emissiveIntensity: 2.5, roughness: 0.1, metalness: 0.8 })
+                    ]),
+                    h('gridHelper', { args: [40, 40, "#4c1d95", "#1e1e3f"], position: [0, -mass*0.2, 0], ref: gridRef, key: 'grid' })
+                ]),
+
+                activeModule === 'blackhole' && h('group', { key: 'bh' }, [
+                    h('mesh', { key: 'sing' }, [
+                        h('sphereGeometry', { args: [mass * 0.3, 64, 64] }),
+                        h('meshBasicMaterial', { color: "#000000" })
+                    ]),
+                    h(Float, { speed: 3, rotationIntensity: 1.5, floatIntensity: 1, key: 'float' }, 
+                        h('mesh', { rotation: [Math.PI/2.2, 0, 0] }, [
+                            h('ringGeometry', { args: [mass * 0.5, mass * 1.8, 128] }),
+                            h('meshStandardMaterial', { color: "#f97316", emissive: "#f97316", emissiveIntensity: 10, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+                        ])
+                    )
+                ]),
+
+                activeModule === 'cosmo' && h(Sparkles, { count: 1500, scale: 30, size: 2.5, speed: 0.3, color: "#8b5cf6", key: 'cos' }),
+
+                h(OrbitControls, { makeDefault: true, enablePan: false, key: 'orbit' })
+            ]);
+        }
+
+        // --- MAIN APP ---
+        function App() {
+            const [started, setStarted] = useState(false);
+            const [activeModule, setActiveModule] = useState('curvature');
+            const [mass, setMass] = useState(5);
+
+            const modules = {
+                curvature: { title: "Courbure de l'Espace", eq: "G_{\\mu\\nu} = \\frac{8\\pi G}{c^4}T_{\\mu\\nu}", desc: "La masse déforme la géométrie locale de l'univers." },
+                blackhole: { title: "Singularité Finale", eq: "R_s = \\frac{2GM}{c^2}", desc: "L'horizon où même la lumière ne peut s'échapper." },
+                cosmo: { title: "Expansion Universelle", eq: "H(t) = \\frac{\\dot{a}}{a}", desc: "L'univers s'étend à chaque seconde." }
+            };
+
+            if (!started) {
+                return h('div', { className: "h-screen w-screen flex flex-col items-center justify-center bg-[#020205] text-center p-12 overflow-hidden" }, [
+                    h('div', { className: "absolute inset-0 opacity-20 animate-pulse-slow", key: 'bg' }, [
+                        h(Canvas, null, h(Stars, { count: 8000 }))
+                    ]),
+                    h('div', { className: "relative z-10 flex flex-col items-center gap-12", key: 'ui' }, [
+                        h('div', null, [
+                            h('h1', { className: "text-[14vw] font-bold accent-text tracking-tighter leading-none" }, "EINSTEIN"),
+                            h('p', { className: "text-2xl text-slate-500 uppercase tracking-[0.6em] font-light mt-4" }, "Relativity Simulator v2.0")
+                        ]),
+                        h('button', { 
+                            className: "px-24 py-8 bg-violet-600 text-white rounded-full font-bold text-2xl shadow-[0_0_60px_rgba(139,92,246,0.3)] hover:bg-violet-500 transition-all hover:scale-105 active:scale-95",
+                            onClick: () => { console.log('Starting app...'); setStarted(true); }
+                        }, "LANCER L'EXPÉRIENCE")
+                    ])
+                ]);
+            }
+
+            return h('div', { className: "h-screen w-screen relative flex flex-col bg-[#020205]" }, [
+                // Header Nav
+                h('header', { className: "h-24 glass border-b border-white/5 flex items-center justify-between px-12 z-30" }, [
+                    h('div', { className: "flex items-center gap-6" }, [
+                        h('div', { className: "w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center font-bold text-white" }, "E"),
+                        h('div', null, [
+                            h('h1', { className: "text-xl font-bold text-white tracking-widest" }, "PLATFORME EINSTEIN"),
+                            h('p', { className: "text-[9px] uppercase text-slate-500 tracking-[0.2em] font-bold" }, "Système Restauré / Stable")
+                        ])
+                    ]),
+                    h('nav', { className: "flex gap-4" }, Object.keys(modules).map(key => 
+                        h('button', { 
+                            key, 
+                            onClick: () => setActiveModule(key),
+                            className: "px-8 py-3 rounded-full text-xs font-bold transition-all " + (activeModule === key ? "nav-active" : "nav-btn text-slate-500 hover:text-white")
+                        }, key.charAt(0).toUpperCase() + key.slice(1))
+                    ))
+                ]),
+
+                // Content
+                h('main', { className: "flex-1 relative" }, [
+                    // Sidebar
+                    h('div', { className: "fixed top-32 left-8 z-20 w-80 glass p-8 rounded-[40px] space-y-8" }, [
+                        h('h2', { className: "text-2xl font-bold accent-text" }, modules[activeModule].title),
+                        h('div', { className: "math-card" }, h(MathDisplay, { math: modules[activeModule].eq, id: 'main-eq' })),
+                        h('p', { className: "text-sm text-slate-400 leading-relaxed" }, modules[activeModule].desc)
+                    ]),
+
+                    // 3D Canvas
+                    h(Canvas, { key: 'canvas-root' }, [
+                        h(PerspectiveCamera, { makeDefault: true, position: [15, 10, 15] }),
+                        h(SimulatorScene, { activeModule, mass })
+                    ]),
+
+                    // HUD Controls
+                    h('div', { className: "fixed bottom-12 left-1/2 -translate-x-1/2 glass px-12 py-8 rounded-[50px] flex items-center gap-16 z-30 border border-white/10 shadow-2xl" }, [
+                        h('div', { className: "flex flex-col items-center gap-4" }, [
+                            h('div', { className: "flex justify-between w-full text-[10px] uppercase font-bold text-slate-500 tracking-widest" }, [
+                                h('span', null, "Paramètre de Masse"),
+                                h('span', { className: "text-violet-400" }, mass.toFixed(1) + " M☉")
+                            ]),
+                            h('input', { 
+                                type: 'range', min: 1, max: 10, step: 0.1, value: mass, 
+                                onChange: (e) => setMass(parseFloat(e.target.value))
+                            })
+                        ]),
+                        h('div', { className: "h-12 w-[1px] bg-white/10" }),
+                        h('div', { className: "flex flex-col" }, [
+                            h('div', { className: "flex items-center gap-2" }, [
+                                h('div', { className: "w-2 h-2 rounded-full bg-green-500 animate-pulse" }),
+                                h('span', { className: "text-[10px] font-bold uppercase tracking-widest text-slate-300" }, "Simulation Active")
+                            ]),
+                            h('span', { className: "text-[9px] text-slate-500" }, "Moteur Relativity v2.0")
+                        ])
+                    ])
+                ])
+            ]);
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(h(App));
+    </script>
+</body>
+</html>

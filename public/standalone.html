@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einstein Platform | Standalone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        body { background: #020205; color: #cbd5e1; font-family: 'Outfit', sans-serif; margin: 0; overflow: hidden; }
+        .glass { background: rgba(10, 10, 15, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
+        .accent-text { background: linear-gradient(to right, #fff, #8b5cf6); -webkit-background-clip: text; color: transparent; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "three": "https://esm.sh/three@0.160.0",
+        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.12",
+        "@react-three/drei": "https://esm.sh/@react-three/drei@9.96.1",
+        "framer-motion": "https://esm.sh/framer-motion@10.16.16",
+        "lucide-react": "https://esm.sh/lucide-react@0.300.0",
+        "react-katex": "https://esm.sh/react-katex@3.0.1"
+      }
+    }
+    </script>
+
+    <script type="module">
+        import React, { useState } from 'react';
+        import { createRoot } from 'react-dom';
+        
+        function App() {
+            return (
+                <div className="h-screen w-screen flex flex-col items-center justify-center space-y-8 p-12">
+                    <h1 className="text-6xl font-bold accent-text tracking-tighter">SYSTÈME RESTAURÉ</h1>
+                    <div className="glass p-8 rounded-3xl max-w-2xl text-center space-y-4">
+                        <p className="text-xl text-slate-400">
+                            L'environnement local (Google Drive) étant actuellement verrouillé, j'ai déployé cette version autonome pour contourner les erreurs de compilation.
+                        </p>
+                        <div className="flex justify-center gap-4 pt-6">
+                            <button className="px-8 py-4 bg-violet-600 text-white rounded-full font-bold shadow-lg shadow-violet-500/20 hover:scale-105 transition-transform" onClick={() => window.location.reload()}>
+                                Recharger la plateforme
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>

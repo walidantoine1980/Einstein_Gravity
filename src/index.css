@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-space-950: #020205;
+  --color-space-900: #0a0a0f;
+  --color-space-800: #11111a;
+  --color-space-700: #1a1a2e;
+  --color-space-600: #2a2a45;
+  
+  --color-accent: #8b5cf6;
+  --color-accent-light: #a78bfa;
+  --color-accent-glow: rgba(139, 92, 246, 0.15);
+  
+  --font-serif: "Outfit", serif;
+  --font-mono: "Fira Code", monospace;
+}
+
+/* Base styles for the scientific platform */
+@layer base {
+  body {
+    @apply bg-space-950 text-slate-300 font-serif antialiased selection:bg-accent/30;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-bold text-white tracking-tight;
+  }
+  
+  /* KaTeX customization */
+  .katex {
+    @apply text-accent-light;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-space-900/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl;
+  }
+  
+  .scientific-button {
+    @apply flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all duration-300 border border-white/10 hover:border-accent/50;
+  }
+  
+  .math-card {
+    @apply p-4 bg-black/40 border border-accent/20 rounded-xl font-mono text-sm;
+  }
+}
+
+/* Animations */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
